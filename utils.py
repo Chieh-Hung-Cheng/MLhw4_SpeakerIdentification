@@ -3,14 +3,16 @@ import numpy as np
 from Config import Config
 from torch.utils.data import random_split
 import os
+import random
 
 def fix_randomness(seed):
+    random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     if torch.cuda.is_available():
-        torch.cuda.seed(seed)
+        torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
     print("Randomness Fixed")
 

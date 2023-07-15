@@ -1,11 +1,12 @@
 import torch
 import os
 from torch.utils.data import DataLoader
+from SpeakerClassifier import get_cosine_schedule_with_warmup
 
 class Config:
     # Time & Randomness
     time_string = None
-    seed = 3141592
+    seed = 87
 
     # Paths
     base_path = None
@@ -21,18 +22,22 @@ class Config:
     train_loader = None
     valid_loader = None
     test_loader = None
-    valid_ratio = 0.2
+    valid_ratio = 0.1
+    num_worker = 8
 
     # Training Related
-    learning_rate = 3e-4
-    epochs = 10000
-    batch_size = 128
+    learning_rate = 1e-3
+    epochs = 70000
+    batch_size = 8
     early_stop = 50
+    valid_cycle = 2
+    warmup_steps = 1000
 
     model = None
     device = "cuda" if torch.cuda.is_available() else "cpu"
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = None
+    scheduler = None
 
     @classmethod
     def set_path_time(cls, timenow):
@@ -54,9 +59,21 @@ class Config:
         print(f"{Config.time_string=}")
 
     @classmethod
-    def set_train_valid_loader(cls, train_dataset, valid_dataset):
-        cls.train_loader = DataLoader(train_dataset, batch_size=cls.batch_size, shuffle=True)
-        cls.valid_loader = DataLoader(valid_dataset, batch_size=cls.batch_size, shuffle=True)
+    def set_train_valid_loader(cls, train_dataset, valid_dataset, collate_function):
+        cls.train_loader = DataLoader(train_dataset,
+                                      batch_size=cls.batch_size,
+                                      shuffle=True,
+                                      num_workers=cls.num_worker,
+                                      drop_last=True,
+                                      pin_memory=True, # Prevent VM paging
+                                      collate_fn=collate_function)
+        cls.valid_loader = DataLoader(valid_dataset,
+                                      batch_size=cls.batch_size,
+                                      shuffle=True,
+                                      num_workers=cls.num_worker,
+                                      drop_last=True,
+                                      pin_memory=True,
+                                      collate_fn=collate_function)
         print("Train, Valid DataLoader Complete")
 
 
@@ -68,7 +85,8 @@ class Config:
             cls.model = model_class().to(cls.device)
             print("Training a new model...")
         cls.criterion = torch.nn.CrossEntropyLoss()
-        cls.optimizer = torch.optim.Adam(cls.model.parameters(), lr=cls.learning_rate, weight_decay=1e-5)
+        cls.optimizer = torch.optim.AdamW(cls.model.parameters(), lr=cls.learning_rate)
+        cls.scheduler = get_cosine_schedule_with_warmup(cls.optimizer, cls.warmup_steps, cls.epochs)
         print("Model, Criterion, Optimizer Complete")
 
     @classmethod

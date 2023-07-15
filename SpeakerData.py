@@ -1,10 +1,12 @@
+import random
+
 from Config import Config
 import json
 import os
 from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset
-
+from torch.nn.utils.rnn import pad_sequence
 
 class SpeakerFileParser():
     def __init__(self):
@@ -45,10 +47,10 @@ class SpeakerFileParser():
         return ret_int, num_data
 
 
-
 class SpeakerDataset(Dataset):
-    def __init__(self, vector_list, label_list):
+    def __init__(self, vector_list, label_list, segment_length=128):
         self.vector_tensors = vector_list
+        self.segment_length = segment_length
         if label_list is not None:
             self.label_tensors = torch.LongTensor(label_list)
         else:
@@ -61,12 +63,26 @@ class SpeakerDataset(Dataset):
 
     def __getitem__(self, item):
         if self.label_tensors is not None:
-            return self.vector_tensors[item], self.label_tensors[item]
+            # Training and Validation
+            vector_length = len(self.vector_tensors[item])
+            if vector_length > self.segment_length:
+                start_idx = random.randint(0, vector_length - self.segment_length)
+            else:
+                start_idx = 0
+            return self.vector_tensors[item][start_idx:], self.label_tensors[item]
         else:
+            # Testing
             return self.vector_tensors[item]
+
+
+def collate_function(batch):
+    vector_tensors, label_tensors = zip(*batch)
+    vector_tensors = pad_sequence(vector_tensors, batch_first=True, padding_value=-20)
+    label_tensors = torch.LongTensor(label_tensors)
+    return vector_tensors, label_tensors
 
 
 if __name__ == "__main__":
     Config.data_path = r"D:\ML_Dataset\HW4\Dataset"
     sfp = SpeakerFileParser()
-    print(sfp.my_dict_tester())
+    sfp.parse_test_data()
