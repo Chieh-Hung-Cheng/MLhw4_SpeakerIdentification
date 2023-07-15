@@ -3,6 +3,7 @@ import os
 from torch.utils.data import DataLoader
 from SpeakerClassifier import get_cosine_schedule_with_warmup
 
+
 class Config:
     # Time & Randomness
     time_string = None
@@ -65,7 +66,7 @@ class Config:
                                       shuffle=True,
                                       num_workers=cls.num_worker,
                                       drop_last=True,
-                                      pin_memory=True, # Prevent VM paging
+                                      pin_memory=True,  # Prevent VM paging
                                       collate_fn=collate_function)
         cls.valid_loader = DataLoader(valid_dataset,
                                       batch_size=cls.batch_size,
@@ -76,6 +77,16 @@ class Config:
                                       collate_fn=collate_function)
         print("Train, Valid DataLoader Complete")
 
+    @classmethod
+    def set_test_loader(cls, test_dataset, collate_function):
+        cls.test_loader = DataLoader(test_dataset,
+                                     batch_size=1,
+                                     shuffle=False,
+                                     num_workers=cls.num_worker,
+                                     drop_last=False,
+                                     pin_memory=True,
+                                     collate_fn=collate_function)
+        print("Test DataLoader Complete")
 
     @classmethod
     def set_model_criterion_optimizer(cls, model_class):
@@ -95,6 +106,7 @@ class Config:
             cls.model = model_class().to(cls.device)
         cls.model.load_state_dict(torch.load(os.path.join(cls.save_path, f"model_{model_name}.ckpt")))
         print(f"Model name {model_name} Loaded")
+
 
 if __name__ == "__main__":
     print(Config.seed)

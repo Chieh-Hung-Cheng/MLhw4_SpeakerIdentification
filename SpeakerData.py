@@ -74,6 +74,26 @@ class SpeakerDataset(Dataset):
             # Testing
             return self.vector_tensors[item]
 
+class SpeakerTestDataset(Dataset):
+    def __init__(self):
+        with open(os.path.join(Config.data_path, "testdata.json")) as f:
+            self.test_dict = json.load(f)
+
+        self.test_filenames = []
+        self.vector_tensors = []
+        for uttr_dict in tqdm(self.test_dict["utterances"]):
+            filename = uttr_dict["feature_path"]
+            self.test_filenames.append(filename)
+            self.vector_tensors.append(torch.load(os.path.join(Config.data_path, filename)))
+
+    def __len__(self):
+        return len(self.test_filenames)
+
+    def __getitem__(self, item):
+        filename = self.test_filenames[item]
+        vector_tensor = self.vector_tensors[item]
+        return vector_tensor, filename
+
 
 def collate_function(batch):
     vector_tensors, label_tensors = zip(*batch)
@@ -81,8 +101,11 @@ def collate_function(batch):
     label_tensors = torch.LongTensor(label_tensors)
     return vector_tensors, label_tensors
 
+def test_collate_function(batch):
+    vector_tensors, filenames = zip(*batch)
+    return vector_tensors, filenames
 
 if __name__ == "__main__":
     Config.data_path = r"D:\ML_Dataset\HW4\Dataset"
-    sfp = SpeakerFileParser()
-    sfp.parse_test_data()
+    testset = SpeakerTestDataset()
+    pass
