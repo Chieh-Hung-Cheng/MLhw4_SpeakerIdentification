@@ -12,7 +12,6 @@ class Trainer:
         self.best_accuracy = -1.0
         self.strolling = 0
 
-
     def train(self):
         # train mode
         Config.model.train()
@@ -34,6 +33,7 @@ class Trainer:
             Config.optimizer.step()
             Config.scheduler.step()
             # Update Process Bar
+            pbar.update()
             pbar.set_postfix({"train_loss": f"{loss:.3f}"})
 
             loss_record.append(loss.detach().item())
@@ -64,6 +64,7 @@ class Trainer:
             correct_count += torch.sum(label_pred == y_b)
             item_count += len(y_b)
             # Update process bar
+            pbar.update()
             pbar.set_postfix({"valid_loss": f"{loss:.3f}",
                               "valid_accuracy": f"{correct_count / item_count:.3%}"})
         pbar.close()
@@ -73,7 +74,7 @@ class Trainer:
 
     def summary(self, train_loss, valid_loss, valid_accuracy):
         def print_Info():
-            print(f"{train_loss=:.3f}, {valid_loss=:.3f}, {valid_accuracy=:.3%}, "
+            tqdm.write(f"{train_loss=:.3f}, {valid_loss=:.3f}, {valid_accuracy=:.3%}, "
                   f"best_accuracy={self.best_accuracy:.3%}, strolling={self.strolling}")
 
         if valid_loss < self.best_loss:
@@ -87,7 +88,7 @@ class Trainer:
             self.strolling += 1
             print_Info()
             if self.strolling >= Config.early_stop:
-                print(f"Early Stopped at epoch {self.epoch_num}")
+                tqdm.write(f"Early Stopped at epoch {self.epoch_num}")
                 return True
             else:
                 return False

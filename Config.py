@@ -21,12 +21,12 @@ class Config:
     valid_loader = None
     test_loader = None
     valid_ratio = 0.1
-    num_worker = 8
+    num_worker = 4
 
     # Training Related
     learning_rate = 1e-3
     epochs = 70000
-    batch_size = 8
+    batch_size = 32
     early_stop = 50
     valid_cycle = 2
     warmup_steps = 1000

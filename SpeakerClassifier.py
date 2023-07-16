@@ -56,24 +56,26 @@ class ConvolutionModule(nn.Module):
     def __init__(self, dim):
         super().__init__()
         self.layernorm = nn.LayerNorm(dim)
-        self.conv_pointwise = nn.Conv1d(dim, dim, kernel_size=1) # bug here
-        self.glu = nn.GLU()
-        self.conv_depthwise = nn.Conv1d(dim, dim, kernel_size=3, padding=1, groups=80)
+        self.conv_pointwise_first = nn.Conv1d(dim, 2*dim, kernel_size=1)
+        self.glu = nn.GLU(dim=1)
+        self.conv_depthwise = nn.Conv1d(dim, dim, kernel_size=3, padding=1, groups=dim)
         self.bn = nn.BatchNorm1d(dim)
         self.swish = nn.SiLU()
+        self.conv_pointwise_second = nn.Conv1d(dim, dim, kernel_size=1)
         self.dropout = nn.Dropout()
 
     def forward(self, x):
         # input: (B, N, dim)
-        x = self.layernorm(x)
-        # (B, N, dim)
-        x = self.conv_pointwise(x)
-        x = self.glu(x)
-        x = self.conv_depthwise(x)
-        x = self.bn(x)
-        x = self.swish(x)
-        x = self.conv_pointwise(x)
-        x = self.dropout(x)
+        x = self.layernorm(x)  # (B, N, dim)
+        x = x.permute(0, 2, 1)  # (B, dim, N)
+        x = self.conv_pointwise_first(x)  # (B, 2*dim, N)
+        x = self.glu(x)  # (B, dim, N)
+        x = self.conv_depthwise(x)  # (B, dim, N)
+        x = self.bn(x)  # (B, dim, N)
+        x = self.swish(x)  # (B, dim, N)
+        x = self.conv_pointwise_second(x)  # (B, dim, N)
+        x = self.dropout(x)  # (B, dim, N)
+        x = x.permute(0, 2, 1)  # (B, dim, N)
         return x
 
 
@@ -87,14 +89,10 @@ class ConformerBlock(nn.Module):
 
     def forward(self, x):
         # input: (B, N, 80)
-        x = x + self.linear_layer(x) * 0.5
-        # (B, N, 80)
-        x = x + self.MHSA_M(x)
-        # (B, N, 80)
-        x = x + self.conv_module(x)
-        # (B, N, 80)
-        x = x + self.linear_layer(x) * 0.5
-        # (B, N, 80)
+        x = x + self.linear_layer(x) * 0.5  # (B, N, 80)
+        x = x + self.MHSA_M(x)  # (B, N, 80)
+        x = x + self.conv_module(x)  # (B, N, 80)
+        x = x + self.linear_layer(x) * 0.5  # (B, N, 80)
         x = self.layer_norm(x)
         return x
 
