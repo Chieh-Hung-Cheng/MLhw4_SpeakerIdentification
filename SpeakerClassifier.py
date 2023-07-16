@@ -11,6 +11,7 @@ class SpeakerClassifier(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(40, 80),
             # Medium Baseline: Change to Conformer
+            ConformerBlock(80),
             ConformerBlock(80)
         )
         self.fc = nn.Sequential(
