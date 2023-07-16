@@ -14,7 +14,7 @@ class Config:
 
     # Load Models
     load_ckpt = False
-    load_name = None
+    load_name = "17500716"
 
     # Dataset / DataLoader
     train_loader = None
@@ -25,11 +25,11 @@ class Config:
 
     # Training Related
     learning_rate = 1e-3
-    epochs = 70000
+    epochs = 300
     batch_size = 32
     early_stop = 50
     valid_cycle = 2
-    warmup_steps = 1000
+    warmup_steps = 10
 
     model = None
     device = "cuda" if torch.cuda.is_available() else "cpu"

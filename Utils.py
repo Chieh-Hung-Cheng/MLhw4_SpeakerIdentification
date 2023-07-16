@@ -98,7 +98,7 @@ class Utils:
             Config.model.load_state_dict(torch.load(os.path.join(Config.save_path, f"model_{Config.load_name}.ckpt")))
             print(f"Model name {Config.load_name} Loaded")
         else:
-            print("Training a new model...")
+            print("Training a new model are we?")
 
         Config.criterion = torch.nn.CrossEntropyLoss()
         Config.optimizer = torch.optim.AdamW(Config.model.parameters(), lr=Config.learning_rate)
